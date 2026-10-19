@@ -51,17 +51,30 @@
 
   <main class="max-w-md mx-auto px-4 mt-4 space-y-4">
 
-    <!-- API Key 設定折疊區 -->
-    <div id="apiModal" class="card p-4 hidden border-2 border-emerald-500/20">
-      <div class="flex justify-between items-center mb-2">
+    <!-- API Key 與模型設定折疊區 -->
+    <div id="apiModal" class="card p-4 hidden border-2 border-emerald-500/20 space-y-3">
+      <div class="flex justify-between items-center">
         <h2 class="text-sm font-bold text-gray-800">🔑 設定 Gemini API Key</h2>
         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-emerald-600 font-semibold underline">免費取得 Key ↗</a>
       </div>
-      <p class="text-xs text-gray-500 mb-3">金鑰僅加密儲存於您的手機瀏覽器中，不會上傳至任何第三方伺服器。</p>
-      <div class="flex space-x-2">
-        <input type="password" id="apiKeyInput" placeholder="貼上 AIzaSy... 開頭的金鑰" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <button onclick="saveApiKey()" class="bg-gray-900 text-white text-sm font-bold px-4 py-2 rounded-xl active:scale-95 transition">儲存</button>
+      <p class="text-xs text-gray-500">金鑰僅儲存於您的手機瀏覽器中，不會上傳至任何第三方伺服器。</p>
+      
+      <div>
+        <label class="block text-[11px] font-bold text-gray-600 mb-1">API 金鑰</label>
+        <input type="password" id="apiKeyInput" placeholder="貼上 AIzaSy... 開頭的金鑰" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
       </div>
+
+      <div>
+        <label class="block text-[11px] font-bold text-gray-600 mb-1">AI 模型版本（若預設無效可隨時切換）</label>
+        <input type="text" id="modelInput" value="gemini-3.8-flash" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <div class="flex flex-wrap gap-1.5 mt-1.5">
+          <button onclick="setModelName('gemini-3.8-flash')" class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-semibold">gemini-3.8-flash</button>
+          <button onclick="setModelName('gemini-3.0-flash')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold">gemini-3.0-flash</button>
+          <button onclick="setModelName('gemini-flash-latest')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold">gemini-flash-latest</button>
+        </div>
+      </div>
+
+      <button onclick="saveApiKey()" class="w-full bg-gray-900 text-white text-sm font-bold py-2.5 rounded-xl active:scale-95 transition">儲存設定</button>
     </div>
 
     <!-- 步驟 1：上傳照片與補充資訊 -->
@@ -120,7 +133,7 @@
       </div>
     </section>
 
-    <!-- 步驟 2：AI 營養總結與微調區 (預設隱藏，分析後或點手動後展開) -->
+    <!-- 步驟 2：AI 營養總結與微調區 -->
     <section id="resultSection" class="card p-5 space-y-4 hidden">
       <div class="flex items-center justify-between border-b border-gray-100 pb-3">
         <h2 class="text-base font-bold text-gray-900">2. 餐點營養總結</h2>
@@ -181,7 +194,7 @@
         </div>
       </div>
 
-      <!-- 顯示最終合成的 Image (讓 iPhone 可以直接長按儲存) -->
+      <!-- 顯示最終合成的 Image -->
       <div class="rounded-xl overflow-hidden shadow-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
         <img id="finalPolaroidImg" alt="合成拍立得" class="w-full h-auto block" />
       </div>
@@ -203,11 +216,13 @@
     let foodMimeType = "image/jpeg";
     let menuBase64 = null;
     let menuMimeType = "image/jpeg";
-    let currentTheme = 'light'; // 'light' or 'dark'
+    let currentTheme = 'light';
 
-    // 初始化檢查 API Key
     window.addEventListener('DOMContentLoaded', () => {
       const savedKey = localStorage.getItem('gemini_diet_api_key');
+      const savedModel = localStorage.getItem('gemini_diet_model') || 'gemini-3.8-flash';
+      document.getElementById('modelInput').value = savedModel;
+
       if (savedKey) {
         document.getElementById('apiKeyInput').value = savedKey;
         updateApiStatus(true);
@@ -221,13 +236,19 @@
       document.getElementById('apiModal').classList.toggle('hidden');
     }
 
+    function setModelName(name) {
+      document.getElementById('modelInput').value = name;
+    }
+
     function saveApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
+      const model = document.getElementById('modelInput').value.trim() || 'gemini-3.8-flash';
       if (!key) {
         alert('請輸入有效的 Gemini API Key');
         return;
       }
       localStorage.setItem('gemini_diet_api_key', key);
+      localStorage.setItem('gemini_diet_model', model);
       updateApiStatus(true);
       document.getElementById('apiModal').classList.add('hidden');
     }
@@ -243,7 +264,7 @@
       }
     }
 
-    // 處理圖片上傳並轉為 Base64 (供 API 使用) 與 Image 物件 (供原圖畫質 Canvas 合成)
+    // 處理圖片上傳並自動適度壓縮 Base64 加快 API 傳輸，同時保留高畫質原圖供 Canvas 合成
     function handleImageUpload(event, type) {
       const file = event.target.files[0];
       if (!file) return;
@@ -251,37 +272,50 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         const dataUrl = e.target.result;
-        if (type === 'food') {
-          foodMimeType = file.type || "image/jpeg";
-          foodBase64 = dataUrl.split(',')[1];
-          const preview = document.getElementById('foodPreview');
-          preview.src = dataUrl;
-          preview.classList.remove('hidden');
-          document.getElementById('foodPlaceholder').classList.add('hidden');
+        const img = new Image();
+        img.onload = function() {
+          // 產生給 API 分析用的輕量 Base64 (最長邊 1024px，加快手機上傳速度)
+          const tempCanvas = document.createElement('canvas');
+          let w = img.naturalWidth;
+          let h = img.naturalHeight;
+          const maxApiDim = 1024;
+          if (w > maxApiDim || h > maxApiDim) {
+            const r = Math.min(maxApiDim / w, maxApiDim / h);
+            w = Math.round(w * r);
+            h = Math.round(h * r);
+          }
+          tempCanvas.width = w;
+          tempCanvas.height = h;
+          tempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = tempCanvas.toDataURL('image/jpeg', 0.85);
 
-          // 載入原圖尺寸供 Canvas 使用
-          const img = new Image();
-          img.onload = function() {
-            foodImageObj = img;
-            // 若已經開啟結果區，即時重繪拍立得
+          if (type === 'food') {
+            foodMimeType = "image/jpeg";
+            foodBase64 = compressedDataUrl.split(',')[1];
+            foodImageObj = img; // 拍立得合成依然使用 100% 原始高畫質圖片！
+
+            const preview = document.getElementById('foodPreview');
+            preview.src = dataUrl;
+            preview.classList.remove('hidden');
+            document.getElementById('foodPlaceholder').classList.add('hidden');
+
             if (!document.getElementById('polaroidSection').classList.contains('hidden')) {
               renderPolaroid();
             }
-          };
-          img.src = dataUrl;
-        } else if (type === 'menu') {
-          menuMimeType = file.type || "image/jpeg";
-          menuBase64 = dataUrl.split(',')[1];
-          const preview = document.getElementById('menuPreview');
-          preview.src = dataUrl;
-          preview.classList.remove('hidden');
-          document.getElementById('menuPlaceholder').classList.add('hidden');
-        }
+          } else if (type === 'menu') {
+            menuMimeType = "image/jpeg";
+            menuBase64 = compressedDataUrl.split(',')[1];
+            const preview = document.getElementById('menuPreview');
+            preview.src = dataUrl;
+            preview.classList.remove('hidden');
+            document.getElementById('menuPlaceholder').classList.add('hidden');
+          }
+        };
+        img.src = dataUrl;
       };
       reader.readAsDataURL(file);
     }
 
-    // 切換手動輸入模式
     function showManualSection() {
       if (!foodImageObj) {
         alert('請先上傳一張「餐點實拍照」作為拍立得底圖喔！');
@@ -293,7 +327,39 @@
       document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // 呼叫 Gemini API 進行分析
+    // 支援多模型自動備援呼叫
+    async function callGeminiWithFallback(apiKey, payload) {
+      const preferredModel = localStorage.getItem('gemini_diet_model') || 'gemini-3.8-flash';
+      const fallbackModels = [preferredModel, 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.0-flash'];
+      const uniqueModels = [...new Set(fallbackModels)];
+
+      let lastError = null;
+      for (const modelName of uniqueModels) {
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await response.json();
+          if (response.ok) {
+            // 記住成功的模型
+            localStorage.setItem('gemini_diet_model', modelName);
+            document.getElementById('modelInput').value = modelName;
+            return data;
+          }
+          lastError = data.error?.message || `模型 ${modelName} 請求失敗`;
+          // 若是 API Key 無效則直接中斷不重試
+          if (lastError.includes('API_KEY_INVALID') || lastError.includes('API key not valid')) {
+            throw new Error('API Key 無效，請確認是否複製完整');
+          }
+        } catch (err) {
+          lastError = err.message;
+        }
+      }
+      throw new Error(lastError);
+    }
+
     async function analyzeWithAI() {
       const apiKey = localStorage.getItem('gemini_diet_api_key');
       if (!apiKey) {
@@ -317,7 +383,7 @@
 
       try {
         const promptText = `你是一位專業精準的台灣營養師。請根據提供的「餐點實拍照」（第一張圖）${menuBase64 ? '、「菜單/標示照」（第二張圖）' : ''}，以及使用者的補充說明：「${note || '無特別補充'}」，精確估算這份餐點實際攝取的營養素。
-請嚴格以 JSON 格式回傳以下欄位：
+請嚴格只回傳 JSON 格式（不要包含 markdown 語法），包含以下欄位：
 {
   "meal_title": "簡短有質感的餐點名稱（建議 10 字以內，顯示於拍立得底欄）",
   "calories": 整數(大卡 kcal),
@@ -328,35 +394,24 @@
 }`;
 
         const parts = [{ text: promptText }];
-        parts.push({
-          inline_data: { mime_type: foodMimeType, data: foodBase64 }
-        });
+        parts.push({ inline_data: { mime_type: foodMimeType, data: foodBase64 } });
         if (menuBase64) {
-          parts.push({
-            inline_data: { mime_type: menuMimeType, data: menuBase64 }
-          });
+          parts.push({ inline_data: { mime_type: menuMimeType, data: menuBase64 } });
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: parts }],
-            generationConfig: {
-              responseMimeType: "application/json"
-            }
-          })
-        });
+        const payload = {
+          contents: [{ parts: parts }],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        };
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error?.message || 'API 請求失敗，請確認 API Key 是否正確');
-        }
+        const data = await callGeminiWithFallback(apiKey, payload);
+        let rawText = data.candidates[0].content.parts[0].text.trim();
+        // 移除可能包裹的 ```json 標籤
+        rawText = rawText.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+        const result = JSON.parse(rawText);
 
-        const rawJson = data.candidates[0].content.parts[0].text;
-        const result = JSON.parse(rawJson);
-
-        // 填入表單
         document.getElementById('titleInput').value = result.meal_title || '營養餐點紀錄';
         document.getElementById('calInput').value = Math.round(result.calories || 0);
         document.getElementById('proInput').value = Number(result.protein || 0).toFixed(1).replace(/\.0$/, '');
@@ -364,7 +419,6 @@
         document.getElementById('fatInput').value = Number(result.fat || 0).toFixed(1).replace(/\.0$/, '');
         document.getElementById('summaryInput').value = result.summary || '';
 
-        // 顯示區塊並繪製拍立得
         document.getElementById('resultSection').classList.remove('hidden');
         document.getElementById('polaroidSection').classList.remove('hidden');
         renderPolaroid();
@@ -379,7 +433,6 @@
       }
     }
 
-    // 切換拍立得主題色
     function setTheme(theme) {
       currentTheme = theme;
       const lightBtn = document.getElementById('themeLightBtn');
@@ -394,14 +447,12 @@
       renderPolaroid();
     }
 
-    // 核心功能：使用 Canvas 100% 保留原圖並合成拍立得底欄（只顯示熱量與蛋白質）
     function renderPolaroid() {
       if (!foodImageObj) return;
 
       const canvas = document.getElementById('polaroidCanvas');
       const ctx = canvas.getContext('2d');
 
-      // 限制最大邊長避免手機記憶體溢位，同時維持原圖比例不裁切
       const maxDim = 1800;
       let imgW = foodImageObj.naturalWidth;
       let imgH = foodImageObj.naturalHeight;
@@ -411,148 +462,44 @@
         imgH = Math.round(imgH * ratio);
       }
 
-      // 計算拍立得外框與底欄尺寸
-      const pad = Math.round(imgW * 0.045); // 四周質感留白邊框 (4.5%)
-      const footerH = Math.round(imgW * 0.22); // 下方資訊底欄高度
+      const pad = Math.round(imgW * 0.045);
+      const footerH = Math.round(imgW * 0.22);
       const totalW = imgW + pad * 2;
       const totalH = imgH + pad + footerH;
 
       canvas.width = totalW;
       canvas.height = totalH;
 
-      // 顏色配置
       const isDark = currentTheme === 'dark';
       const bgColor = isDark ? '#18181B' : '#FFFFFF';
       const titleColor = isDark ? '#FAFAFA' : '#111827';
       const dateColor = isDark ? '#A1A1AA' : '#6B7280';
       const dividerColor = isDark ? '#27272A' : '#E5E7EB';
-      const calColor = isDark ? '#FB923C' : '#EA580C'; // 活力橘
-      const proColor = isDark ? '#34D399' : '#059669'; // 翡翠綠
+      const calColor = isDark ? '#FB923C' : '#EA580C';
+      const proColor = isDark ? '#34D399' : '#059669';
       const labelColor = isDark ? '#A1A1AA' : '#6B7280';
 
-      // 1. 塗滿拍立得背景
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, totalW, totalH);
 
-      // 2. 繪製 100% 原始餐點照片（不變形、不裁切）
       ctx.drawImage(foodImageObj, pad, pad, imgW, imgH);
 
-      // 取得文字與數據
       const title = document.getElementById('titleInput').value || '飲食紀錄';
       const cal = document.getElementById('calInput').value || '0';
       const pro = document.getElementById('proInput').value || '0';
 
-      // 產生當下日期字串 (YYYY.MM.DD HH:mm)
       const now = new Date();
       const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-      // 計算底欄垂直中心點
       const footerTop = pad + imgH;
       const centerY = footerTop + footerH / 2;
 
-      // 字體大小依圖片寬度動態縮放
       const titleFontSize = Math.round(imgW * 0.042);
       const dateFontSize = Math.round(imgW * 0.026);
       const numFontSize = Math.round(imgW * 0.062);
       const unitFontSize = Math.round(imgW * 0.024);
 
-      // 3. 繪製左側：餐點名稱與日期
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
 
-      // 餐點標題 (若過長自動截斷)
       ctx.font = `800 ${titleFontSize}px "Noto Sans TC", "Inter", sans-serif`;
-      ctx.fillStyle = titleColor;
-      const maxTitleWidth = imgW * 0.46;
-      let displayTitle = title;
-      while (ctx.measureText(displayTitle).width > maxTitleWidth && displayTitle.length > 1) {
-        displayTitle = displayTitle.slice(0, -1);
-      }
-      if (displayTitle !== title) displayTitle += '…';
-      ctx.fillText(displayTitle, pad, centerY - footerH * 0.04);
-
-      // 日期時間
-      ctx.font = `500 ${dateFontSize}px "Inter", sans-serif`;
-      ctx.fillStyle = dateColor;
-      ctx.fillText(dateStr, pad, centerY + footerH * 0.22);
-
-      // 4. 繪製右側：只放「熱量」與「蛋白質」兩大重點數據
-      const rightEdge = totalW - pad;
-
-      // --- 蛋白質區塊 (最右側) ---
-      ctx.textAlign = 'right';
-      // 標籤 "PROTEIN 蛋白質"
-      ctx.font = `700 ${unitFontSize}px "Noto Sans TC", "Inter", sans-serif`;
-      ctx.fillStyle = labelColor;
-      ctx.fillText('蛋白質 PROTEIN', rightEdge, centerY - footerH * 0.16);
-
-      // 蛋白質數值 + g
-      ctx.font = `800 ${unitFontSize * 1.1}px "Inter", sans-serif`;
-      ctx.fillStyle = proColor;
-      const proUnitWidth = ctx.measureText(' g').width;
-      ctx.fillText(' g', rightEdge, centerY + footerH * 0.24);
-
-      ctx.font = `800 ${numFontSize}px "Inter", sans-serif`;
-      ctx.fillText(pro, rightEdge - proUnitWidth, centerY + footerH * 0.24);
-      const proBlockWidth = Math.max(
-        ctx.measureText(pro).width + proUnitWidth,
-         unitFontSize * 7.5
-      );
-
-      // --- 分隔線 ---
-      const dividerX = rightEdge - proBlockWidth - (imgW * 0.04);
-      ctx.strokeStyle = dividerColor;
-      ctx.lineWidth = Math.max(2, Math.round(imgW * 0.0025));
-      ctx.beginPath();
-      ctx.moveTo(dividerX, centerY - footerH * 0.28);
-      ctx.lineTo(dividerX, centerY + footerH * 0.28);
-      ctx.stroke();
-
-      // --- 熱量區塊 (分隔線左側) ---
-      const calRightEdge = dividerX - (imgW * 0.04);
-      ctx.font = `700 ${unitFontSize}px "Noto Sans TC", "Inter", sans-serif`;
-      ctx.fillStyle = labelColor;
-      ctx.fillText('熱量 CALORIES', calRightEdge, centerY - footerH * 0.16);
-
-      ctx.font = `800 ${unitFontSize * 1.1}px "Inter", sans-serif`;
-      ctx.fillStyle = calColor;
-      const calUnitWidth = ctx.measureText(' kcal').width;
-      ctx.fillText(' kcal', calRightEdge, centerY + footerH * 0.24);
-
-      ctx.font = `800 ${numFontSize}px "Inter", sans-serif`;
-      ctx.fillText(cal, calRightEdge - calUnitWidth, centerY + footerH * 0.24);
-
-      // 輸出成 Image 標籤供手機長按儲存
-      const finalImg = document.getElementById('finalPolaroidImg');
-      finalImg.src = canvas.toDataURL('image/jpeg', 0.95);
-    }
-
-    // 點擊按鈕下載圖片
-    function downloadImage() {
-      const canvas = document.getElementById('polaroidCanvas');
-      const link = document.createElement('a');
-      const title = document.getElementById('titleInput').value || '飲食紀錄';
-      const now = new Date();
-      const dateTag = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-      link.download = `${dateTag}-${title}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
-      link.click();
-    }
-
-    // 一鍵複製完整營養文字總結
-    function copySummaryText() {
-      const title = document.getElementById('titleInput').value;
-      const cal = document.getElementById('calInput').value;
-      const pro = document.getElementById('proInput').value;
-      const carb = document.getElementById('carbInput').value;
-      const fat = document.getElementById('fatInput').value;
-      const summary = document.getElementById('summaryInput').value;
-
-      const text = `🍽️ 【${title}】\n🔥 熱量：${cal} kcal ｜ 💪 蛋白質：${pro} g\n🍚 碳水：${carb} g ｜ 🥑 脂肪：${fat} g\n📝 總結：${summary}`;
-      navigator.clipboard.writeText(text).then(() => {
-        alert('已複製完整營養紀錄文字！');
-      });
-    }
-  </script>
-</body>
-</html>
