@@ -296,7 +296,6 @@
       }
     }
 
-    // 選擇用餐時段
     function selectMealType(type) {
       selectedMealType = type;
       var buttons = document.querySelectorAll('.meal-btn');
@@ -342,7 +341,6 @@
             foodBase64 = compressedDataUrl.split(',')[1];
             foodImageObj = img;
 
-            // 記錄當下時間
             var now = new Date();
             var yyyy = now.getFullYear();
             var mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -480,16 +478,18 @@
       try {
         var menuHint = menuBase64 ? '、「菜單/標示照」（第二張圖）' : '';
         var noteHint = note ? note : '無特別補充';
-        var promptText = '你是一位專業精準的台灣營養師。這是一餐「' + selectedMealType + '」。請根據提供的「餐點實拍照」（第一張圖）' + menuHint + '，以及使用者的補充說明：「' + noteHint + '」，精確估算這份餐點實際攝取的營養素。
-請嚴格只回傳 JSON 格式（不要包含 markdown 語法），包含以下欄位：
-{
-  "meal_title": "簡短有質感的餐點名稱（建議 10 字以內，顯示於拍立得底欄）",
-  "calories": 整數(大卡 kcal),
-  "protein": 數字(蛋白質克數 g，可至小數點第一位),
-  "carbs": 數字(碳水化合物克數 g，可至小數點第一位),
-  "fat": 數字(脂肪克數 g，可至小數點第一位),
-  "summary": "100字以內的繁體中文餐點內容拆解與營養總結（例如各食材份量估算與營養比例點評）"
-}';
+        var promptText = [
+          '你是一位專業精準的台灣營養師。這是一餐「' + selectedMealType + '」。請根據提供的「餐點實拍照」（第一張圖）' + menuHint + '，以及使用者的補充說明：「' + noteHint + '」，精確估算這份餐點實際攝取的營養素。',
+          '請嚴格只回傳 JSON 格式（不要包含 markdown 語法），包含以下欄位：',
+          '{',
+          '  "meal_title": "簡短有質感的餐點名稱（建議 10 字以內，顯示於拍立得底欄）",',
+          '  "calories": 整數(大卡 kcal),',
+          '  "protein": 數字(蛋白質克數 g，可至小數點第一位),',
+          '  "carbs": 數字(碳水化合物克數 g，可至小數點第一位),',
+          '  "fat": 數字(脂肪克數 g，可至小數點第一位),',
+          '  "summary": "100字以內的繁體中文餐點內容拆解與營養總結（例如各食材份量估算與營養比例點評）"',
+          '}'
+        ].join('\n');
 
         var parts = [{ text: promptText }];
         parts.push({ inline_data: { mime_type: foodMimeType, data: foodBase64 } });
@@ -530,9 +530,7 @@
         document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
 
       } catch (err) {
-        alert('AI 分析提示：' + err.message + '
-
-（拍立得已為您生成於下方，您可直接手動修改數值！）');
+        alert('AI 分析提示：' + err.message + '\n\n（拍立得已為您生成於下方，您可直接手動修改數值！）');
       } finally {
         btn.disabled = false;
         btnText.textContent = '✨ AI 智能估算並更新數據';
@@ -555,7 +553,6 @@
       renderPolaroid();
     }
 
-    // 繪製拍立得底欄：左下角【日期時間 用餐時段】同行呈現（時段比日期大且粗）
     function renderPolaroid() {
       if (!foodImageObj) return;
 
@@ -615,7 +612,7 @@
 
       var titleFontSize = Math.round(imgW * 0.042);
       var dateFontSize = Math.round(imgW * 0.025);
-      var mealFontSize = Math.round(imgW * 0.031); // 時段比日期顯著大一點
+      var mealFontSize = Math.round(imgW * 0.032);
       var numFontSize = Math.round(imgW * 0.062);
       var unitFontSize = Math.round(imgW * 0.024);
 
@@ -703,7 +700,6 @@
       link.click();
     }
 
-    // 複製文字紀錄：第一行完整包含【時段｜餐點名稱】（日期時間）
     function copySummaryText() {
       var title = document.getElementById('titleInput').value;
       var cal = document.getElementById('calInput').value;
@@ -714,11 +710,13 @@
       var mealTag = selectedMealType ? (selectedMealType + '｜') : '';
       var timeTag = recordedDateTimeStr ? (' (' + recordedDateTimeStr + ')') : '';
 
-      var text = '🍽️ 【' + mealTag + title + '】' + timeTag + '
-🔥 熱量：' + cal + ' kcal ｜ 💪 蛋白質：' + pro + ' g
-🍚 碳水：' + carb + ' g ｜ 🥑 脂肪：' + fat + ' g
-📝 總結：' + summary;
-      navigator.clipboard.writeText(text).then(function() {
+      var lines = [
+        '🍽️ 【' + mealTag + title + '】' + timeTag,
+        '🔥 熱量：' + cal + ' kcal ｜ 💪 蛋白質：' + pro + ' g',
+        '🍚 碳水：' + carb + ' g ｜ 🥑 脂肪：' + fat + ' g',
+        '📝 總結：' + summary
+      ];
+      navigator.clipboard.writeText(lines.join('\n')).then(function() {
         alert('已複製完整營養紀錄文字！');
       });
     }
