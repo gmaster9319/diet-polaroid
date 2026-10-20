@@ -141,7 +141,7 @@
       <!-- 手打補充 -->
       <div>
         <label class="block text-xs font-bold text-gray-700 mb-1.5">✍️ 手打補充說明 <span class="text-gray-400 font-normal">(選填)</span></label>
-        <textarea id="noteInput" rows="2" placeholder="例如：雞胸肉 150g、飯只吃一半、無糖豆漿 400ml、只算鴨胸那盤..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
+        <textarea id="noteInput" rows="2" placeholder="例如：白飯 150g、雞肉吃一半、無糖豆漿 400ml（寫克數會最準）" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
       </div>
 
       <!-- 按鈕 -->
@@ -674,9 +674,14 @@
         '使用者補充說明：「' + (note || '無') + '」\n\n' +
         '請依下列步驟估算：\n' +
         '1. 只看畫面中央、最主要的那一份餐點（使用者本人吃的）。背景、畫面邊緣、其他人的餐點與飲料一律不算，除非補充說明另有指示。\n' +
-        '2. 把餐點拆成各項食材（例如白飯、主菜、每一樣配菜、醬汁），逐項估算「整份」的重量與營養素。油炸、裹粉、勾芡、炒菜油、醬汁的熱量一定要算進去，不要低估。\n' +
-        '3. 補充說明提到的份量（例如「雞肉吃一半」「飯只吃一半」）只套用在「被提到的那一項食材」，用 eaten_ratio 表示（0～1）。沒被提到的食材一律視為全部吃完，eaten_ratio = 1。\n' +
-        '4. 份量參考（請依照片實際大小調整）：台灣便當白飯約 200～250g（約 280～350 kcal）；炸雞排整片約 450～650 kcal；炒青菜一份約 50～90 kcal（多為炒菜油）。\n\n' +
+        '2. 把餐點拆成各項食材（例如白飯、主菜、每一樣配菜、醬汁），逐項估算「整份」的重量與營養素。油炸、裹粉、勾芡、炒菜油、醬汁的熱量一定要算進去。\n' +
+        '3. 資訊優先順序（由高到低，前面的一定壓過後面的）：\n' +
+        '   (a) 補充說明裡使用者寫的數字（例如「白飯 150g」「雞胸 120g」）→ 該食材的 grams 必須直接採用這個數字，不可自行更改。\n' +
+        '   (b) 標示照上的數字（營養標示、菜單熱量、電子秤讀數）。\n' +
+        '   (c) 照片目測：以便當盒、碗盤、筷子、湯匙的大小為比例尺判斷實際份量。份量少就估少，份量多就估多。\n' +
+        '   (d) 下方參考值：只有在 (a)(b)(c) 都無法判斷時才用來校準，不要把份量硬往參考值靠。\n' +
+        '4. 補充說明提到「吃了多少」（例如「雞肉吃一半」「飯只吃一半」）只套用在被提到的那一項食材，用 eaten_ratio 表示（0～1）。沒被提到的食材 eaten_ratio = 1。\n' +
+        '5. 參考值（僅供第 3 點 (d) 使用）：台灣便當白飯常見約 150～250g，每 100g 約 140 kcal；炸雞排整片常見約 450～650 kcal；炒青菜一份約 50～90 kcal（多為炒菜油）。\n\n' +
         '只回傳 JSON（不要 markdown），格式如下：\n' +
         '{"meal_title": "簡短有質感的餐點名稱，10 字以內", ' +
         '"items": [{"name": "食材名稱", "grams": 整份重量g, "eaten_ratio": 0到1, "calories": 整份熱量kcal, "protein": 整份蛋白質g, "carbs": 整份碳水g, "fat": 整份脂肪g}], ' +
