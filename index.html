@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="飲食拍立得">
   <title>AI 飲食營養拍立得</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', 'Noto Sans TC', sans-serif;
@@ -22,7 +22,7 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     }
     .loader {
-      border: 3px solid #f3f3f3;
+      border: 3px solid rgba(255,255,255,0.35);
       border-top: 3px solid #ffffff;
       border-radius: 50%;
       width: 20px;
@@ -33,9 +33,7 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    .meal-btn {
-      transition: all 0.2s ease;
-    }
+    .meal-btn { transition: all 0.2s ease; }
     .meal-btn.active {
       background-color: #059669;
       color: #ffffff;
@@ -53,7 +51,7 @@
       <span class="text-2xl">📸</span>
       <h1 class="text-lg font-extrabold tracking-tight text-gray-900">飲食營養拍立得</h1>
     </div>
-    <button type="button" onclick="toggleApiModal()" id="apiStatusBtn" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 flex items-center space-x-1">
+    <button type="button" onclick="toggleApiModal()" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 flex items-center space-x-1">
       <span id="apiDot" class="w-2 h-2 rounded-full bg-gray-400"></span>
       <span>API 設定</span>
     </button>
@@ -61,29 +59,29 @@
 
   <main class="max-w-md mx-auto px-4 mt-4 space-y-4">
 
-    <!-- API Key 與模型設定折疊區 -->
+    <!-- API Key 設定區 -->
     <div id="apiModal" class="card p-4 hidden border-2 border-emerald-500/20 space-y-3">
       <div class="flex justify-between items-center">
         <h2 class="text-sm font-bold text-gray-800">🔑 設定 Gemini API Key</h2>
         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-emerald-600 font-semibold underline">免費取得 Key ↗</a>
       </div>
-      
+
       <div>
         <label class="block text-[11px] font-bold text-gray-600 mb-1">API 金鑰</label>
         <input type="password" id="apiKeyInput" placeholder="貼上 AIzaSy... 開頭的金鑰" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
       </div>
 
-      <div>
-        <div class="flex justify-between items-center mb-1">
-          <label class="block text-[11px] font-bold text-gray-600">AI 模型版本</label>
-          <button type="button" onclick="detectAvailableModels()" class="text-[11px] text-emerald-600 font-bold underline">🔍 自動偵測可用模型</button>
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-[11px] font-bold text-gray-600">AI 模型（自動選擇）</span>
+          <button type="button" onclick="redetectModels()" class="text-[11px] text-emerald-600 font-bold underline">🔍 重新偵測</button>
         </div>
-        <input type="text" id="modelInput" value="gemini-3.0-flash" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <div id="modelTags" class="flex flex-wrap gap-1.5 mt-1.5">
-          <button type="button" onclick="setModelName('gemini-3.0-flash')" class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-semibold">gemini-3.0-flash (最新推薦)</button>
-          <button type="button" onclick="setModelName('gemini-2.0-flash')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-semibold">gemini-2.0-flash</button>
-          <button type="button" onclick="setModelName('gemini-1.5-flash')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-semibold">gemini-1.5-flash</button>
-        </div>
+        <p class="text-xs text-gray-700">目前使用：<span id="currentModelLabel" class="font-mono font-bold">尚未偵測</span></p>
+        <p id="modelListLabel" class="text-[10px] text-gray-400 leading-relaxed"></p>
+        <details class="text-[11px] text-gray-500">
+          <summary class="cursor-pointer font-semibold">進階：手動指定模型（一般請留空）</summary>
+          <input type="text" id="modelOverrideInput" placeholder="留空＝自動選擇最新可用模型" class="mt-2 w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </details>
       </div>
 
       <button type="button" onclick="saveApiKey()" class="w-full bg-gray-900 text-white text-sm font-bold py-2.5 rounded-xl active:scale-95 transition">儲存設定</button>
@@ -96,7 +94,7 @@
         <span class="text-xs text-emerald-600 font-semibold">選圖即刻生成預覽</span>
       </div>
 
-      <!-- 用餐時段必選膠囊按鈕 -->
+      <!-- 用餐時段 -->
       <div>
         <div class="flex items-center justify-between mb-1.5">
           <label class="block text-xs font-bold text-gray-700">🍽️ 用餐時段 <span class="text-red-500">* (必選)</span></label>
@@ -111,12 +109,11 @@
         </div>
       </div>
 
-      <!-- 雙圖片上傳格 -->
+      <!-- 雙圖片上傳 -->
       <div class="grid grid-cols-2 gap-3">
-        <!-- 餐點主圖 (必填) -->
         <div>
           <label class="block text-xs font-bold text-gray-700 mb-1.5">🍱 餐點實拍照 <span class="text-red-500">*</span></label>
-          <label for="foodPhotoInput" class="cursor-pointer flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 hover:bg-emerald-50 transition relative overflow-hidden group">
+          <label for="foodPhotoInput" class="cursor-pointer flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 hover:bg-emerald-50 transition relative overflow-hidden">
             <img id="foodPreview" class="absolute inset-0 w-full h-full object-cover hidden" />
             <div id="foodPlaceholder" class="flex flex-col items-center text-center p-2">
               <span class="text-2xl mb-1">📷</span>
@@ -127,7 +124,6 @@
           <input type="file" id="foodPhotoInput" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'food')">
         </div>
 
-        <!-- 菜單或營養標示 (選填) -->
         <div>
           <label class="block text-xs font-bold text-gray-700 mb-1.5">📋 菜單 / 標示照 <span class="text-gray-400 font-normal">(選填)</span></label>
           <label for="menuPhotoInput" class="cursor-pointer flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 hover:bg-gray-100 transition relative overflow-hidden">
@@ -142,58 +138,67 @@
         </div>
       </div>
 
-      <!-- 手打文字補充 -->
+      <!-- 手打補充 -->
       <div>
         <label class="block text-xs font-bold text-gray-700 mb-1.5">✍️ 手打補充說明 <span class="text-gray-400 font-normal">(選填)</span></label>
-        <textarea id="noteInput" rows="2" placeholder="例如：雞胸肉 150g、飯只吃一半、無糖豆漿 400ml、去皮..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
+        <textarea id="noteInput" rows="2" placeholder="例如：雞胸肉 150g、飯只吃一半、無糖豆漿 400ml、只算鴨胸那盤..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
       </div>
 
-      <!-- 操作按鈕組 -->
+      <!-- 按鈕 -->
       <div class="pt-1 flex flex-col space-y-2">
-        <button type="button" id="analyzeBtn" onclick="analyzeWithAI()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 transition">
+        <button type="button" id="analyzeBtn" onclick="analyzeWithAI()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 transition disabled:opacity-90">
           <span id="btnText">✨ AI 智能估算並更新數據</span>
           <div id="btnLoader" class="loader hidden"></div>
         </button>
+        <p id="statusLine" class="text-[11px] text-center text-gray-500 hidden"></p>
         <button type="button" id="cancelBtn" onclick="cancelAIRequest()" class="w-full py-2 text-xs font-bold text-red-500 bg-red-50 rounded-xl hidden">
           ✕ 取消等待，直接手動輸入數字
         </button>
       </div>
+
+      <!-- 錯誤訊息區（取代一直轉圈圈） -->
+      <div id="errorBox" class="hidden rounded-xl border border-red-200 bg-red-50 p-3 space-y-1">
+        <p id="errorTitle" class="text-sm font-bold text-red-700"></p>
+        <p id="errorDetail" class="text-xs text-red-600 leading-relaxed"></p>
+        <details class="text-[10px] text-red-400">
+          <summary class="cursor-pointer">技術細節（回報問題時截圖這段）</summary>
+          <pre id="errorTech" class="whitespace-pre-wrap break-all mt-1"></pre>
+        </details>
+      </div>
     </section>
 
-    <!-- 步驟 2：AI 營養總結與微調區 -->
+    <!-- 步驟 2：營養數據 -->
     <section id="resultSection" class="card p-5 space-y-4 hidden">
       <div class="flex items-center justify-between border-b border-gray-100 pb-3">
         <h2 class="text-base font-bold text-gray-900">2. 餐點營養數據（可點擊微調）</h2>
-        <button type="button" onclick="copySummaryText()" class="text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition active:scale-95">
+        <button type="button" onclick="copySummaryText()" class="text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition active:scale-95 shrink-0">
           📋 複製文字紀錄
         </button>
       </div>
 
-      <!-- 四大營養素完整顯示與微調面板 -->
       <div class="grid grid-cols-4 gap-2 text-center">
         <div class="bg-orange-50/80 border border-orange-100 rounded-xl p-2.5">
           <span class="text-[11px] font-bold text-orange-600 block">🔥 熱量</span>
-          <input type="number" id="calInput" value="0" oninput="renderPolaroid()" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-orange-400">
+          <input type="number" inputmode="numeric" id="calInput" value="0" oninput="renderPolaroid()" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-orange-400">
           <span class="text-[10px] text-gray-400 block">kcal</span>
         </div>
         <div class="bg-emerald-50/80 border border-emerald-100 rounded-xl p-2.5">
           <span class="text-[11px] font-bold text-emerald-600 block">💪 蛋白質</span>
-          <input type="number" step="0.1" id="proInput" value="0" oninput="renderPolaroid()" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-emerald-400">
+          <input type="number" inputmode="decimal" step="0.1" id="proInput" value="0" oninput="renderPolaroid()" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-emerald-400">
           <span class="text-[10px] text-gray-400 block">g</span>
         </div>
         <div class="bg-amber-50/80 border border-amber-100 rounded-xl p-2.5">
           <span class="text-[11px] font-bold text-amber-700 block">🍚 碳水</span>
-          <input type="number" step="0.1" id="carbInput" value="0" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-amber-400">
+          <input type="number" inputmode="decimal" step="0.1" id="carbInput" value="0" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-amber-400">
           <span class="text-[10px] text-gray-400 block">g</span>
         </div>
         <div class="bg-yellow-50/80 border border-yellow-100 rounded-xl p-2.5">
           <span class="text-[11px] font-bold text-yellow-700 block">🥑 脂肪</span>
-          <input type="number" step="0.1" id="fatInput" value="0" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-yellow-400">
+          <input type="number" inputmode="decimal" step="0.1" id="fatInput" value="0" class="w-full bg-transparent text-center font-extrabold text-lg text-gray-900 focus:outline-none border-b border-transparent focus:border-yellow-400">
           <span class="text-[10px] text-gray-400 block">g</span>
         </div>
       </div>
 
-      <!-- 餐點名稱與文字總結 -->
       <div class="space-y-2.5 pt-1">
         <div>
           <label class="block text-xs font-bold text-gray-600 mb-1">🏷️ 拍立得顯示餐點標題（修改即時更新圖卡）</label>
@@ -206,306 +211,432 @@
       </div>
     </section>
 
-    <!-- 步驟 3：拍立得合成圖卡輸出區 -->
+    <!-- 步驟 3：拍立得 -->
     <section id="polaroidSection" class="card p-5 space-y-4 hidden">
       <div class="flex items-center justify-between">
         <div>
           <h2 class="text-base font-bold text-gray-900">3. 專屬飲食拍立得</h2>
           <p class="text-xs text-gray-400">長按下方圖片即可「加入照片」存檔</p>
         </div>
-        <!-- 主題色切換 -->
-        <div class="flex bg-gray-100 p-1 rounded-xl">
+        <div class="flex bg-gray-100 p-1 rounded-xl shrink-0">
           <button type="button" onclick="setTheme('light')" id="themeLightBtn" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-white shadow-sm text-gray-800 transition">極簡白</button>
           <button type="button" onclick="setTheme('dark')" id="themeDarkBtn" class="text-xs font-bold px-2.5 py-1 rounded-lg text-gray-500 transition">質感深灰</button>
         </div>
       </div>
 
-      <!-- 顯示最終合成的 Image -->
       <div class="rounded-xl overflow-hidden shadow-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
         <img id="finalPolaroidImg" alt="合成拍立得" class="w-full h-auto block" />
       </div>
 
-      <!-- 備用下載按鈕 -->
-      <button type="button" onclick="downloadImage()" class="w-full bg-gray-900 hover:bg-black active:scale-[0.99] text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2 transition">
-        <span>⬇️ 點擊下載高畫質原圖圖卡</span>
+      <button type="button" onclick="saveImage()" class="w-full bg-gray-900 hover:bg-black active:scale-[0.99] text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2 transition">
+        <span>⬇️ 儲存 / 分享高畫質圖卡</span>
       </button>
 
-      <!-- 隱藏的 Canvas 用於高解析度繪圖 -->
       <canvas id="polaroidCanvas" class="hidden"></canvas>
     </section>
 
   </main>
 
   <script>
+    /* ================= 狀態 ================= */
     var foodImageObj = null;
     var foodBase64 = null;
-    var foodMimeType = "image/jpeg";
     var menuBase64 = null;
-    var menuMimeType = "image/jpeg";
     var currentTheme = 'light';
     var selectedMealType = '';
     var currentAbortController = null;
+    var userCancelled = false;
     var recordedDateTimeStr = '';
+    var elapsedTimer = null;
 
-    window.addEventListener('DOMContentLoaded', function() {
-      try {
-        var savedKey = localStorage.getItem('gemini_diet_api_key');
-        var savedModel = localStorage.getItem('gemini_diet_model');
-        // 自動將之前誤存的 3.8 或 2.5 修正為官方最新的 gemini-3.0-flash
-        if (!savedModel || savedModel === 'gemini-3.8-flash' || savedModel === 'gemini-2.5-flash') {
-          savedModel = 'gemini-3.0-flash';
-          localStorage.setItem('gemini_diet_model', savedModel);
-        }
-        document.getElementById('modelInput').value = savedModel;
+    var LS_KEY = 'gemini_diet_api_key';            // 沿用舊版，不必重新輸入 Key
+    var LS_MODEL = 'diet_v2_working_model';        // 上次成功的模型
+    var LS_OVERRIDE = 'diet_v2_model_override';    // 手動指定（一般為空）
+    var LS_BLOCKED = 'diet_v2_blocked_models';     // 已確認這把 Key 不能用的模型
+    var LS_LIST = 'diet_v2_model_list';            // 偵測到的模型清單快取
+    var LIST_TTL_MS = 24 * 60 * 60 * 1000;         // 清單快取一天
+    var PER_REQUEST_TIMEOUT_MS = 60000;            // 單次等待上限 60 秒
+    var MAX_ATTEMPTS = 6;
+    var API_BASE = 'https://generativelanguage.googleapis.com/v1beta/';
 
-        if (savedKey) {
-          document.getElementById('apiKeyInput').value = savedKey;
-          updateApiStatus(true);
-        } else {
-          document.getElementById('apiModal').classList.remove('hidden');
-          updateApiStatus(false);
-        }
-      } catch (e) {
-        console.error(e);
+    // 偵測失敗時的保底候選（依 2026/10 官方建議）
+    var FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+
+    /* ================= 小工具 ================= */
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+    function lsGetJSON(k, dflt) { try { var v = JSON.parse(lsGet(k)); return v == null ? dflt : v; } catch (e) { return dflt; } }
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function nowStr() {
+      var d = new Date();
+      return d.getFullYear() + '.' + pad2(d.getMonth() + 1) + '.' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    }
+
+    /* ================= 初始化 ================= */
+    window.addEventListener('DOMContentLoaded', function () {
+      lsDel('gemini_diet_model'); // 舊版殘留的錯誤模型名稱，直接清掉
+      var savedKey = lsGet(LS_KEY);
+      document.getElementById('modelOverrideInput').value = lsGet(LS_OVERRIDE) || '';
+      updateModelLabels();
+      if (savedKey) {
+        document.getElementById('apiKeyInput').value = savedKey;
+        updateApiStatus(true);
+      } else {
+        document.getElementById('apiModal').classList.remove('hidden');
+        updateApiStatus(false);
       }
     });
 
-    function toggleApiModal() {
-      var modal = document.getElementById('apiModal');
-      modal.classList.toggle('hidden');
+    function toggleApiModal() { document.getElementById('apiModal').classList.toggle('hidden'); }
+
+    function updateApiStatus(hasKey) {
+      var dot = document.getElementById('apiDot');
+      dot.classList.remove('bg-gray-400', 'bg-red-500', 'bg-emerald-500');
+      dot.classList.add(hasKey ? 'bg-emerald-500' : 'bg-red-500');
     }
 
-    function setModelName(name) {
-      document.getElementById('modelInput').value = name;
-      localStorage.setItem('gemini_diet_model', name);
+    function updateModelLabels() {
+      document.getElementById('currentModelLabel').textContent = lsGet(LS_OVERRIDE) || lsGet(LS_MODEL) || '尚未偵測（第一次估算時自動選）';
+      var cache = lsGetJSON(LS_LIST, null);
+      document.getElementById('modelListLabel').textContent = (cache && cache.models && cache.models.length)
+        ? '這把 Key 可用的候選：' + cache.models.slice(0, 5).join('、')
+        : '';
     }
 
     function saveApiKey() {
       var key = document.getElementById('apiKeyInput').value.trim();
-      var model = document.getElementById('modelInput').value.trim() || 'gemini-3.0-flash';
-      if (!key) {
-        alert('請輸入有效的 Gemini API Key');
-        return;
+      if (!key) { alert('請輸入有效的 Gemini API Key'); return; }
+      var oldKey = lsGet(LS_KEY);
+      lsSet(LS_KEY, key);
+      lsSet(LS_OVERRIDE, document.getElementById('modelOverrideInput').value.trim());
+      if (oldKey !== key) { // 換了 Key，舊的偵測結果作廢
+        lsDel(LS_MODEL); lsDel(LS_BLOCKED); lsDel(LS_LIST);
       }
-      localStorage.setItem('gemini_diet_api_key', key);
-      localStorage.setItem('gemini_diet_model', model);
       updateApiStatus(true);
+      updateModelLabels();
       document.getElementById('apiModal').classList.add('hidden');
     }
 
-    // 自動向 Google 伺服器查詢該 API Key 可用的最新模型
-    async function detectAvailableModels() {
-      var key = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gemini_diet_api_key');
-      if (!key) {
-        alert('請先在上方輸入 API 金鑰！');
-        return;
-      }
+    async function redetectModels() {
+      var key = document.getElementById('apiKeyInput').value.trim() || lsGet(LS_KEY);
+      if (!key) { alert('請先輸入 API 金鑰！'); return; }
+      lsDel(LS_LIST); lsDel(LS_BLOCKED); lsDel(LS_MODEL);
       try {
-        var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key);
-        var data = await res.json();
-        if (!res.ok || !data.models) {
-          throw new Error((data.error && data.error.message) || '無法取得模型清單');
-        }
-        var flashModels = [];
-        for (var i = 0; i < data.models.length; i++) {
-          var m = data.models[i];
-          var name = m.name.replace('models/', '');
-          if (name.indexOf('gemini') !== -1 && m.supportedGenerationMethods && m.supportedGenerationMethods.indexOf('generateContent') !== -1) {
-            if (name.indexOf('flash') !== -1 || name.indexOf('3.0') !== -1) {
-              flashModels.push(name);
-            }
-          }
-        }
-        if (flashModels.length > 0) {
-          // 優先選擇 3.0-flash
-          var best = flashModels[0];
-          for (var j = 0; j < flashModels.length; j++) {
-            if (flashModels[j].indexOf('3.0-flash') !== -1) {
-              best = flashModels[j];
-              break;
-            }
-          }
-          setModelName(best);
-          var tagContainer = document.getElementById('modelTags');
-          tagContainer.innerHTML = '';
-          flashModels.slice(0, 5).forEach(function(mName) {
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-semibold';
-            btn.textContent = mName;
-            btn.onclick = function() { setModelName(mName); };
-            tagContainer.appendChild(btn);
-          });
-          alert('偵測成功！已自動為您切換為可用模型：' + best);
-        } else {
-          alert('未找到適合的 Flash 模型，請手動輸入 gemini-3.0-flash');
-        }
+        var list = await fetchModelList(key);
+        updateModelLabels();
+        alert(list.length ? ('偵測成功！將優先使用：' + list[0]) : '這把 Key 查不到可用的 Flash 模型，請確認 Key 是否正確。');
       } catch (err) {
-        alert('偵測失敗：' + err.message);
+        var c = classifyError(err.status, err.message);
+        alert('偵測失敗：' + c.title + '\n' + c.detail);
       }
     }
 
-    function updateApiStatus(hasKey) {
-      var dot = document.getElementById('apiDot');
-      if (hasKey) {
-        dot.classList.remove('bg-gray-400', 'bg-red-500');
-        dot.classList.add('bg-emerald-500');
+    /* ================= 模型挑選（核心修正：不再寫死模型名稱） ================= */
+    // 只保留適合「看圖 + 文字回覆」的 Flash 系列，排除語音、生圖、即時等特殊模型
+    var EXCLUDE_RE = /(tts|image|live|audio|embed|computer|robotics|native|learnlm|gemma|aqa|veo|imagen)/i;
+
+    function rankModels(names) {
+      var scored = [];
+      names.forEach(function (n) {
+        if (EXCLUDE_RE.test(n)) return;
+        if (n.indexOf('flash') === -1) return;
+        var m = /^gemini-(\d+)(?:\.(\d+))?-flash(-lite)?(.*)$/.exec(n);
+        var score;
+        if (m) {
+          var ver = Number(m[1]) * 10 + Number(m[2] || 0);
+          var isLite = !!m[3];
+          var isPreview = /preview|exp/i.test(m[4] || '');
+          var hasDate = /\d{2}-\d{2}|\d{3}$/.test(m[4] || '');
+          var isLegacy = Number(m[1]) < 3; // 2.x 已限制新使用者，排到 3.x 之後
+          score = ver * 10 - (isLite ? 300 : 0) - (isPreview ? 400 : 0) - (isLegacy ? 400 : 0) - (hasDate ? 2 : 0);
+        } else if (n === 'gemini-flash-latest') {
+          score = -1000;
+        } else if (n === 'gemini-flash-lite-latest') {
+          score = -1100;
+        } else {
+          return;
+        }
+        scored.push({ name: n, score: score });
+      });
+      scored.sort(function (a, b) { return b.score - a.score; });
+      return scored.map(function (s) { return s.name; });
+    }
+
+    async function fetchModelList(apiKey) {
+      var all = [];
+      var pageToken = '';
+      for (var page = 0; page < 5; page++) {
+        var url = API_BASE + 'models?pageSize=200&key=' + encodeURIComponent(apiKey) + (pageToken ? '&pageToken=' + pageToken : '');
+        var res = await fetchWithTimeout(url, { method: 'GET' }, 15000);
+        var data = await safeJson(res);
+        if (!res.ok) {
+          var e = new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
+          e.status = res.status;
+          throw e;
+        }
+        (data.models || []).forEach(function (m) {
+          var methods = m.supportedGenerationMethods || [];
+          if (methods.indexOf('generateContent') !== -1) all.push(String(m.name || '').replace('models/', ''));
+        });
+        if (!data.nextPageToken) break;
+        pageToken = data.nextPageToken;
+      }
+      var ranked = rankModels(all);
+      lsSet(LS_LIST, JSON.stringify({ at: Date.now(), models: ranked }));
+      return ranked;
+    }
+
+    async function getCandidateModels(apiKey) {
+      var list = null;
+      var cache = lsGetJSON(LS_LIST, null);
+      if (cache && cache.models && cache.models.length && (Date.now() - cache.at) < LIST_TTL_MS) {
+        list = cache.models;
       } else {
-        dot.classList.remove('bg-emerald-500');
-        dot.classList.add('bg-red-500');
+        try { list = await fetchModelList(apiKey); } catch (e) {
+          if (e.status === 400 || e.status === 401 || e.status === 403) throw e; // Key 本身有問題，直接回報
+          list = null;
+        }
+      }
+      if (!list || !list.length) list = FALLBACK_MODELS.slice();
+
+      var blocked = lsGetJSON(LS_BLOCKED, []);
+      var ordered = [];
+      function add(n) { if (n && ordered.indexOf(n) === -1 && blocked.indexOf(n) === -1) ordered.push(n); }
+      add(lsGet(LS_OVERRIDE));
+      add(lsGet(LS_MODEL));
+      list.forEach(add);
+      return ordered;
+    }
+
+    function blockModel(name) {
+      var blocked = lsGetJSON(LS_BLOCKED, []);
+      if (blocked.indexOf(name) === -1) blocked.push(name);
+      lsSet(LS_BLOCKED, JSON.stringify(blocked));
+      if (lsGet(LS_MODEL) === name) lsDel(LS_MODEL);
+    }
+
+    // 讀懂 Google 回覆中的「請改用 models/xxx」
+    function extractSuggestedModel(msg) {
+      var m = /use\s+models\/([a-z0-9.\-]+)/i.exec(msg || '');
+      return m ? m[1].replace(/[.\-]+$/, '') : null;
+    }
+
+    /* ================= 錯誤分類 ================= */
+    function classifyError(status, msg) {
+      msg = msg || '';
+      var low = msg.toLowerCase();
+      if (status === 'timeout') {
+        return { kind: 'timeout', next: true, title: '⏱️ AI 回應太慢（超過 60 秒）', detail: '通常是 Google 伺服器忙碌。請稍後再試一次。' };
+      }
+      if (status === 'network') {
+        return { kind: 'network', next: false, title: '📶 網路連線失敗', detail: '請確認手機網路正常後再試。' };
+      }
+      if (low.indexOf('api key not valid') !== -1 || low.indexOf('api_key_invalid') !== -1 || low.indexOf('api key expired') !== -1) {
+        return { kind: 'key', next: false, title: '🔑 API Key 無效', detail: '請到右上角「API 設定」確認 Key 是否複製完整（AIzaSy 開頭）。' };
+      }
+      if (status === 403 || low.indexOf('permission') !== -1) {
+        return { kind: 'perm', next: false, title: '🚫 這把 Key 沒有使用權限', detail: '請到 Google AI Studio 確認 Key 狀態，或重新建立一把 Key。' };
+      }
+      if (status === 429 || low.indexOf('quota') !== -1 || low.indexOf('resource_exhausted') !== -1 || low.indexOf('rate limit') !== -1) {
+        var daily = /perday|per day|daily/i.test(msg);
+        return {
+          kind: 'quota', next: true, title: daily ? '📉 今天的免費額度用完了' : '⏳ 使用太頻繁，觸發每分鐘上限',
+          detail: (daily ? '請明天再試。' : '請等 1 分鐘後再試。') + '提醒：共用同一把 Key 的人會一起消耗額度。'
+        };
+      }
+      if (status === 404 || low.indexOf('no longer available') !== -1 || low.indexOf('not found') !== -1 || low.indexOf('is not supported') !== -1 || low.indexOf('deprecated') !== -1) {
+        return { kind: 'model', next: true, block: true, title: '🧩 模型無法使用', detail: 'Google 已停用或限制此模型，程式已自動嘗試其他模型。' };
+      }
+      if (status === 503 || status === 500 || low.indexOf('overloaded') !== -1 || low.indexOf('unavailable') !== -1) {
+        return { kind: 'busy', next: true, title: '🔥 Google 伺服器忙碌中', detail: '請稍後再試一次。' };
+      }
+      return { kind: 'other', next: true, title: '⚠️ AI 估算失敗', detail: '請稍後再試；若持續發生，請截圖下方技術細節。' };
+    }
+
+    /* ================= 連線 ================= */
+    async function safeJson(res) { try { return await res.json(); } catch (e) { return {}; } }
+
+    async function fetchWithTimeout(url, options, timeoutMs) {
+      var controller = new AbortController();
+      currentAbortController = controller;
+      var timedOut = false;
+      var timer = setTimeout(function () { timedOut = true; controller.abort(); }, timeoutMs);
+      try {
+        var res = await fetch(url, { method: options.method, headers: options.headers, body: options.body, signal: controller.signal });
+        clearTimeout(timer);
+        return res;
+      } catch (err) {
+        clearTimeout(timer);
+        var e;
+        if (err.name === 'AbortError') {
+          e = new Error(timedOut ? 'timeout' : 'cancelled');
+          e.status = timedOut ? 'timeout' : 'cancelled';
+        } else {
+          e = new Error(err.message || 'network error');
+          e.status = 'network';
+        }
+        throw e;
       }
     }
 
+    function buildGenerationConfig(modelName, withThinking) {
+      var cfg = { responseMimeType: 'application/json', temperature: 0.2 };
+      // Gemini 3 系列：用最低思考等級換取速度（3.8 不支援 minimal，傳了會報錯）
+      if (withThinking && /^gemini-3/.test(modelName)) {
+        cfg.thinkingConfig = { thinkingLevel: 'low' };
+      }
+      return cfg;
+    }
+
+    async function callModel(apiKey, modelName, parts, withThinking) {
+      var url = API_BASE + 'models/' + modelName + ':generateContent?key=' + encodeURIComponent(apiKey);
+      var res = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: buildGenerationConfig(modelName, withThinking) })
+      }, PER_REQUEST_TIMEOUT_MS);
+      var data = await safeJson(res);
+      if (!res.ok) {
+        var e = new Error((data.error && data.error.message) || ('HTTP ' + res.status));
+        e.status = res.status;
+        throw e;
+      }
+      var cand = data.candidates && data.candidates[0];
+      var text = '';
+      if (cand && cand.content && cand.content.parts) {
+        cand.content.parts.forEach(function (p) { if (p.text && !p.thought) text += p.text; });
+      }
+      if (!text) {
+        var reason = (cand && cand.finishReason) || (data.promptFeedback && data.promptFeedback.blockReason) || 'EMPTY';
+        var e2 = new Error('AI 沒有回傳內容（' + reason + '）');
+        e2.status = 'empty';
+        throw e2;
+      }
+      return text;
+    }
+
+    async function runWithFallback(apiKey, parts, onStatus) {
+      var candidates = await getCandidateModels(apiKey);
+      var tried = [];
+      var techLog = [];
+      var lastClass = null;
+
+      for (var i = 0; i < candidates.length && tried.length < MAX_ATTEMPTS; i++) {
+        if (userCancelled) throw Object.assign(new Error('cancelled'), { status: 'cancelled' });
+        var model = candidates[i];
+        if (tried.indexOf(model) !== -1) continue;
+        tried.push(model);
+        onStatus(model);
+
+        var withThinking = true;
+        for (var retry = 0; retry < 2; retry++) {
+          try {
+            var text = await callModel(apiKey, model, parts, withThinking);
+            lsSet(LS_MODEL, model);
+            updateModelLabels();
+            return { text: text, model: model };
+          } catch (err) {
+            if (err.status === 'cancelled' || userCancelled) throw Object.assign(new Error('cancelled'), { status: 'cancelled' });
+            techLog.push('[' + model + '] ' + err.status + ': ' + err.message);
+            // 思考參數不被接受 → 拿掉再試一次同一個模型
+            if (withThinking && err.status === 400 && /thinking/i.test(err.message)) { withThinking = false; continue; }
+            var c = classifyError(err.status, err.message);
+            lastClass = c;
+            if (c.block) blockModel(model);
+            var suggested = extractSuggestedModel(err.message);
+            if (suggested && candidates.indexOf(suggested) === -1) candidates.splice(i + 1, 0, suggested);
+            if (!c.next) {
+              var fatal = new Error(c.title); fatal.cls = c; fatal.tech = techLog.join('\n'); throw fatal;
+            }
+            break;
+          }
+        }
+      }
+      var final = new Error((lastClass && lastClass.title) || '所有模型都無法使用');
+      final.cls = lastClass || { title: '🧩 找不到可用的模型', detail: '請到「API 設定」按「重新偵測」，或確認 Key 是否正確。' };
+      final.tech = techLog.join('\n') || '(no attempts)';
+      throw final;
+    }
+
+    /* ================= 介面互動 ================= */
     function selectMealType(type) {
       selectedMealType = type;
-      var buttons = document.querySelectorAll('.meal-btn');
-      buttons.forEach(function(btn) {
-        if (btn.textContent.trim() === type) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
+      document.querySelectorAll('.meal-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.textContent.trim() === type);
       });
       document.getElementById('mealHint').classList.add('hidden');
-
-      if (foodImageObj && !document.getElementById('polaroidSection').classList.contains('hidden')) {
-        renderPolaroid();
-      }
+      if (foodImageObj) renderPolaroid();
     }
 
     function handleImageUpload(event, type) {
       var file = event.target.files[0];
       if (!file) return;
-
       var reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         var dataUrl = e.target.result;
         var img = new Image();
-        img.onload = function() {
-          var tempCanvas = document.createElement('canvas');
-          var w = img.naturalWidth;
-          var h = img.naturalHeight;
-          var maxApiDim = 800;
+        img.onload = function () {
+          // 送給 AI 的是縮小版（省流量、加速）；拍立得用的是原圖物件，不經任何濾鏡或重繪
+          var w = img.naturalWidth, h = img.naturalHeight, maxApiDim = 1024;
           if (w > maxApiDim || h > maxApiDim) {
             var r = Math.min(maxApiDim / w, maxApiDim / h);
-            w = Math.round(w * r);
-            h = Math.round(h * r);
+            w = Math.round(w * r); h = Math.round(h * r);
           }
-          tempCanvas.width = w;
-          tempCanvas.height = h;
-          tempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          var compressedDataUrl = tempCanvas.toDataURL('image/jpeg', 0.78);
+          var tmp = document.createElement('canvas');
+          tmp.width = w; tmp.height = h;
+          tmp.getContext('2d').drawImage(img, 0, 0, w, h);
+          var b64 = tmp.toDataURL('image/jpeg', 0.82).split(',')[1];
 
           if (type === 'food') {
-            foodMimeType = "image/jpeg";
-            foodBase64 = compressedDataUrl.split(',')[1];
+            foodBase64 = b64;
             foodImageObj = img;
-
-            var now = new Date();
-            var yyyy = now.getFullYear();
-            var mm = String(now.getMonth() + 1).padStart(2, '0');
-            var dd = String(now.getDate()).padStart(2, '0');
-            var hh = String(now.getHours()).padStart(2, '0');
-            var min = String(now.getMinutes()).padStart(2, '0');
-            recordedDateTimeStr = yyyy + '.' + mm + '.' + dd + ' ' + hh + ':' + min;
-
+            recordedDateTimeStr = nowStr();
             var preview = document.getElementById('foodPreview');
             preview.src = dataUrl;
             preview.classList.remove('hidden');
             document.getElementById('foodPlaceholder').classList.add('hidden');
-
             document.getElementById('resultSection').classList.remove('hidden');
             document.getElementById('polaroidSection').classList.remove('hidden');
             renderPolaroid();
-          } else if (type === 'menu') {
-            menuMimeType = "image/jpeg";
-            menuBase64 = compressedDataUrl.split(',')[1];
-            var previewMenu = document.getElementById('menuPreview');
-            previewMenu.src = dataUrl;
-            previewMenu.classList.remove('hidden');
+          } else {
+            menuBase64 = b64;
+            var pm = document.getElementById('menuPreview');
+            pm.src = dataUrl;
+            pm.classList.remove('hidden');
             document.getElementById('menuPlaceholder').classList.add('hidden');
           }
         };
+        img.onerror = function () { alert('這張圖片無法讀取，請換一張或改用截圖再試。'); };
         img.src = dataUrl;
       };
       reader.readAsDataURL(file);
     }
 
+    function showError(cls, tech) {
+      document.getElementById('errorTitle').textContent = cls.title;
+      document.getElementById('errorDetail').textContent = cls.detail + '（拍立得已生成於下方，可直接手動輸入數值）';
+      document.getElementById('errorTech').textContent = tech || '';
+      document.getElementById('errorBox').classList.remove('hidden');
+    }
+    function hideError() { document.getElementById('errorBox').classList.add('hidden'); }
+
+    function setBusy(busy) {
+      var btn = document.getElementById('analyzeBtn');
+      btn.disabled = busy;
+      document.getElementById('btnLoader').classList.toggle('hidden', !busy);
+      document.getElementById('cancelBtn').classList.toggle('hidden', !busy);
+      document.getElementById('statusLine').classList.toggle('hidden', !busy);
+      if (!busy) {
+        document.getElementById('btnText').textContent = '✨ AI 智能估算並更新數據';
+        clearInterval(elapsedTimer);
+      }
+    }
+
     function cancelAIRequest() {
-      if (currentAbortController) {
-        currentAbortController.abort();
-      }
-      document.getElementById('resultSection').classList.remove('hidden');
-      document.getElementById('polaroidSection').classList.remove('hidden');
-      renderPolaroid();
-    }
-
-    async function fetchWithTimeout(url, options, timeoutMs) {
-      var controller = new AbortController();
-      currentAbortController = controller;
-      var timer = setTimeout(function() {
-        controller.abort();
-      }, timeoutMs);
-
-      try {
-        var response = await fetch(url, {
-          method: options.method,
-          headers: options.headers,
-          body: options.body,
-          signal: controller.signal
-        });
-        clearTimeout(timer);
-        return response;
-      } catch (err) {
-        clearTimeout(timer);
-        if (err.name === 'AbortError') {
-          throw new Error('連線逾時（超過 15 秒無回應）');
-        }
-        throw err;
-      }
-    }
-
-    async function callGeminiWithFallback(apiKey, payload, statusCallback) {
-      var preferredModel = document.getElementById('modelInput').value.trim() || localStorage.getItem('gemini_diet_model') || 'gemini-3.0-flash';
-      var candidates = [preferredModel, 'gemini-3.0-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-      var uniqueModels = [];
-      for (var i = 0; i < candidates.length; i++) {
-        if (uniqueModels.indexOf(candidates[i]) === -1) {
-          uniqueModels.push(candidates[i]);
-        }
-      }
-
-      var errors = [];
-      for (var j = 0; j < uniqueModels.length; j++) {
-        var modelName = uniqueModels[j];
-        statusCallback('正在透過 ' + modelName + ' 估算中...');
-        try {
-          var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent?key=' + apiKey;
-          var response = await fetchWithTimeout(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }, 15000);
-
-          var data = await response.json();
-          if (response.ok && data.candidates && data.candidates[0]) {
-            localStorage.setItem('gemini_diet_model', modelName);
-            document.getElementById('modelInput').value = modelName;
-            return data;
-          }
-          var errMsg = (data.error && data.error.message) ? data.error.message : ('模型 ' + modelName + ' 無回應');
-          errors.push('[' + modelName + ']: ' + errMsg);
-          if (errMsg.indexOf('API_KEY_INVALID') !== -1 || errMsg.indexOf('API key not valid') !== -1) {
-            throw new Error('API Key 無效，請確認是否複製完整');
-          }
-        } catch (err) {
-          errors.push('[' + modelName + ']: ' + err.message);
-          if (err.message.indexOf('API Key 無效') !== -1) {
-            throw err;
-          }
-        }
-      }
-      throw new Error(errors[0] || '所有模型皆連線失敗');
+      userCancelled = true;
+      if (currentAbortController) currentAbortController.abort();
     }
 
     async function analyzeWithAI() {
@@ -514,77 +645,75 @@
         alert('請先選擇用餐時段（早餐 / 中餐 / 晚餐 / 點心 / 飲品）！');
         return;
       }
-
-      var apiKey = localStorage.getItem('gemini_diet_api_key');
+      var apiKey = lsGet(LS_KEY);
       if (!apiKey) {
         alert('請先點擊右上角「API 設定」貼上您的免費 Gemini API Key！');
         document.getElementById('apiModal').classList.remove('hidden');
         return;
       }
-      if (!foodImageObj || !foodBase64) {
-        alert('請先上傳「餐點實拍照」喔！');
-        return;
+      if (!foodImageObj || !foodBase64) { alert('請先上傳「餐點實拍照」喔！'); return; }
+
+      hideError();
+      userCancelled = false;
+      setBusy(true);
+      var startAt = Date.now();
+      var currentModel = '';
+      var statusLine = document.getElementById('statusLine');
+      function tick() {
+        var s = Math.round((Date.now() - startAt) / 1000);
+        document.getElementById('btnText').textContent = 'AI 估算中… ' + s + ' 秒';
+        statusLine.textContent = currentModel ? ('使用模型：' + currentModel + '（通常 5–20 秒）') : '正在確認可用模型…';
       }
+      tick();
+      elapsedTimer = setInterval(tick, 1000);
 
       var note = document.getElementById('noteInput').value.trim();
-      var btn = document.getElementById('analyzeBtn');
-      var btnText = document.getElementById('btnText');
-      var btnLoader = document.getElementById('btnLoader');
-      var cancelBtn = document.getElementById('cancelBtn');
+      var promptText =
+        '你是一位專業精準的台灣營養師。這是一餐「' + selectedMealType + '」。' +
+        '第一張圖是「餐點實拍照」' + (menuBase64 ? '，第二張圖是「菜單或營養標示照」，若標示上有明確數字請優先採用' : '') + '。' +
+        '使用者補充說明：「' + (note || '無') + '」（補充說明的份量與指示優先於你從照片的推測）。\n' +
+        '重要：只估算畫面中央、最主要的那一份餐點（使用者本人吃的）。背景或畫面邊緣其他人的餐點、飲料、配菜一律不要算進去，除非補充說明另有指示。\n' +
+        '請估算實際攝取的營養素，只回傳 JSON（不要 markdown），欄位如下：\n' +
+        '{"meal_title": "簡短有質感的餐點名稱，10 字以內", "calories": 整數 kcal, "protein": 蛋白質克數（可到小數一位）, "carbs": 碳水化合物克數, "fat": 脂肪克數, "summary": "100 字以內繁體中文：各食材份量估算與營養點評"}';
 
-      btn.disabled = true;
-      btnLoader.classList.remove('hidden');
-      cancelBtn.classList.remove('hidden');
+      var parts = [{ text: promptText }, { inline_data: { mime_type: 'image/jpeg', data: foodBase64 } }];
+      if (menuBase64) parts.push({ inline_data: { mime_type: 'image/jpeg', data: menuBase64 } });
 
       try {
-        var menuHint = menuBase64 ? '、「菜單/標示照」（第二張圖）' : '';
-        var noteHint = note ? note : '無特別補充';
-        var promptText = '你是一位專業精準的台灣營養師。這是一餐「' + selectedMealType + '」。請根據提供的「餐點實拍照」（第一張圖）' + menuHint + '，以及使用者的補充說明：「' + noteHint + '」，精確估算這份餐點實際攝取的營養素。請嚴格只回傳 JSON 格式（不要包含 markdown 語法），包含以下欄位：{"meal_title": "簡短有質感的餐點名稱（建議 10 字以內，顯示於拍立得底欄）", "calories": 整數(大卡 kcal), "protein": 數字(蛋白質克數 g，可至小數點第一位), "carbs": 數字(碳水化合物克數 g，可至小數點第一位), "fat": 數字(脂肪克數 g，可至小數點第一位), "summary": "100字以內的繁體中文餐點內容拆解與營養總結（例如各食材份量估算與營養比例點評）"}';
-
-        var parts = [{ text: promptText }];
-        parts.push({ inline_data: { mime_type: foodMimeType, data: foodBase64 } });
-        if (menuBase64) {
-          parts.push({ inline_data: { mime_type: menuMimeType, data: menuBase64 } });
+        var out = await runWithFallback(apiKey, parts, function (m) { currentModel = m; tick(); });
+        var raw = out.text.trim();
+        var a = raw.indexOf('{'), b = raw.lastIndexOf('}');
+        if (a !== -1 && b !== -1) raw = raw.substring(a, b + 1);
+        var result;
+        try { result = JSON.parse(raw); } catch (pe) {
+          var pErr = new Error('parse');
+          pErr.cls = { title: '🧾 AI 回覆格式錯誤', detail: '請再按一次估算。' };
+          pErr.tech = out.text.slice(0, 500);
+          throw pErr;
         }
-
-        var payload = {
-          contents: [{ parts: parts }],
-          generationConfig: {
-            responseMimeType: "application/json"
-          }
-        };
-
-        var data = await callGeminiWithFallback(apiKey, payload, function(msg) {
-          btnText.textContent = msg;
-        });
-
-        var rawText = data.candidates[0].content.parts[0].text.trim();
-        var firstBrace = rawText.indexOf('{');
-        var lastBrace = rawText.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          rawText = rawText.substring(firstBrace, lastBrace + 1);
-        }
-        var result = JSON.parse(rawText);
-
+        function num(v) { var n = Number(String(v == null ? 0 : v).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; }
         document.getElementById('titleInput').value = result.meal_title || '營養餐點紀錄';
-        document.getElementById('calInput').value = Math.round(result.calories || 0);
-        document.getElementById('proInput').value = Math.round(Number(result.protein || 0) * 10) / 10;
-        document.getElementById('carbInput').value = Math.round(Number(result.carbs || 0) * 10) / 10;
-        document.getElementById('fatInput').value = Math.round(Number(result.fat || 0) * 10) / 10;
+        document.getElementById('calInput').value = Math.round(num(result.calories));
+        document.getElementById('proInput').value = Math.round(num(result.protein) * 10) / 10;
+        document.getElementById('carbInput').value = Math.round(num(result.carbs) * 10) / 10;
+        document.getElementById('fatInput').value = Math.round(num(result.fat) * 10) / 10;
         document.getElementById('summaryInput').value = result.summary || '';
-
+        renderPolaroid();
+        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        if (err.status === 'cancelled' || userCancelled) {
+          // 使用者主動取消：不跳錯誤，直接讓他手動輸入
+        } else if (err.cls) {
+          showError(err.cls, err.tech);
+        } else {
+          var c = classifyError(err.status, err.message);
+          showError(c, String(err.status || '') + ': ' + err.message);
+        }
         document.getElementById('resultSection').classList.remove('hidden');
         document.getElementById('polaroidSection').classList.remove('hidden');
         renderPolaroid();
-        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
-
-      } catch (err) {
-        alert('AI 分析提示：' + err.message);
       } finally {
-        btn.disabled = false;
-        btnText.textContent = '✨ AI 智能估算並更新數據';
-        btnLoader.classList.add('hidden');
-        cancelBtn.classList.add('hidden');
+        setBusy(false);
       }
     }
 
@@ -593,17 +722,29 @@
       var lightBtn = document.getElementById('themeLightBtn');
       var darkBtn = document.getElementById('themeDarkBtn');
       if (theme === 'light') {
-        lightBtn.className = "text-xs font-bold px-2.5 py-1 rounded-lg bg-white shadow-sm text-gray-800 transition";
-        darkBtn.className = "text-xs font-bold px-2.5 py-1 rounded-lg text-gray-500 transition";
+        lightBtn.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-white shadow-sm text-gray-800 transition';
+        darkBtn.className = 'text-xs font-bold px-2.5 py-1 rounded-lg text-gray-500 transition';
       } else {
-        darkBtn.className = "text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-800 shadow-sm text-white transition";
-        lightBtn.className = "text-xs font-bold px-2.5 py-1 rounded-lg text-gray-500 transition";
+        darkBtn.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-800 shadow-sm text-white transition';
+        lightBtn.className = 'text-xs font-bold px-2.5 py-1 rounded-lg text-gray-500 transition';
       }
       renderPolaroid();
     }
 
+    /* ================= 拍立得（原照片直接嵌入，不重繪、不加濾鏡、不裁切） ================= */
+    var fontsReady = false;
+    function ensureFontsThenRender() {
+      if (fontsReady || !document.fonts || !document.fonts.load) { fontsReady = true; return; }
+      Promise.all([
+        document.fonts.load('800 40px "Noto Sans TC"', '香煎鴨胸早餐中餐晚餐點心飲品蛋白質熱量'),
+        document.fonts.load('800 40px "Inter"', '0123456789kcal'),
+        document.fonts.load('500 40px "Inter"', '2026.10.19 17:13')
+      ]).catch(function () {}).then(function () { fontsReady = true; renderPolaroid(); });
+    }
+
     function renderPolaroid() {
       if (!foodImageObj) return;
+      ensureFontsThenRender();
 
       var canvas = document.getElementById('polaroidCanvas');
       var ctx = canvas.getContext('2d');
@@ -621,7 +762,6 @@
       var footerH = Math.round(imgW * 0.22);
       var totalW = imgW + pad * 2;
       var totalH = imgH + pad + footerH;
-
       canvas.width = totalW;
       canvas.height = totalH;
 
@@ -630,40 +770,44 @@
       var titleColor = isDark ? '#FAFAFA' : '#111827';
       var dateColor = isDark ? '#A1A1AA' : '#6B7280';
       var mealColor = isDark ? '#F4F4F5' : '#1F2937';
-      var dividerColor = isDark ? '#27272A' : '#E5E7EB';
+      var dividerColor = isDark ? '#3F3F46' : '#E5E7EB';
       var calColor = isDark ? '#FB923C' : '#EA580C';
       var proColor = isDark ? '#34D399' : '#059669';
       var labelColor = isDark ? '#A1A1AA' : '#6B7280';
 
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, totalW, totalH);
-
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(foodImageObj, pad, pad, imgW, imgH);
 
       var title = document.getElementById('titleInput').value || '飲食紀錄';
       var cal = document.getElementById('calInput').value || '0';
       var pro = document.getElementById('proInput').value || '0';
-
+      if (!recordedDateTimeStr) recordedDateTimeStr = nowStr();
       var dateStr = recordedDateTimeStr;
-      if (!dateStr) {
-        var now = new Date();
-        var yyyy = now.getFullYear();
-        var mm = String(now.getMonth() + 1).padStart(2, '0');
-        var dd = String(now.getDate()).padStart(2, '0');
-        var hh = String(now.getHours()).padStart(2, '0');
-        var min = String(now.getMinutes()).padStart(2, '0');
-        dateStr = yyyy + '.' + mm + '.' + dd + ' ' + hh + ':' + min;
-        recordedDateTimeStr = dateStr;
-      }
 
       var footerTop = pad + imgH;
       var centerY = footerTop + footerH / 2;
-
       var titleFontSize = Math.round(imgW * 0.042);
       var dateFontSize = Math.round(imgW * 0.025);
       var mealFontSize = Math.round(imgW * 0.032);
       var numFontSize = Math.round(imgW * 0.062);
       var unitFontSize = Math.round(imgW * 0.024);
+
+      // 右側區塊先算寬度，左側標題依剩餘空間截斷，避免重疊
+      var rightEdge = totalW - pad;
+      ctx.font = '800 ' + (unitFontSize * 1.1) + 'px "Inter", sans-serif';
+      var proUnitWidth = ctx.measureText(' g').width;
+      var calUnitWidth = ctx.measureText(' kcal').width;
+      ctx.font = '800 ' + numFontSize + 'px "Inter", sans-serif';
+      var proBlockWidth = Math.max(ctx.measureText(pro).width + proUnitWidth, unitFontSize * 7.5);
+      var calNumWidth = ctx.measureText(cal).width;
+      var dividerX = rightEdge - proBlockWidth - (imgW * 0.04);
+      var calRightEdge = dividerX - (imgW * 0.04);
+      ctx.font = '700 ' + unitFontSize + 'px "Noto Sans TC", "Inter", sans-serif';
+      var calBlockWidth = Math.max(calNumWidth + calUnitWidth, ctx.measureText('熱量 CALORIES').width);
+      var leftMaxWidth = Math.max(imgW * 0.3, calRightEdge - calBlockWidth - imgW * 0.04 - pad);
 
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
@@ -671,48 +815,36 @@
       // 1. 餐點標題
       ctx.font = '800 ' + titleFontSize + 'px "Noto Sans TC", "Inter", sans-serif';
       ctx.fillStyle = titleColor;
-      var maxTitleWidth = imgW * 0.46;
       var displayTitle = title;
-      while (ctx.measureText(displayTitle).width > maxTitleWidth && displayTitle.length > 1) {
-        displayTitle = displayTitle.slice(0, -1);
+      if (ctx.measureText(displayTitle).width > leftMaxWidth) {
+        while (displayTitle.length > 1 && ctx.measureText(displayTitle + '…').width > leftMaxWidth) displayTitle = displayTitle.slice(0, -1);
+        displayTitle += '…';
       }
-      if (displayTitle !== title) displayTitle += '…';
       ctx.fillText(displayTitle, pad, centerY - footerH * 0.04);
 
-      // 2. 第二行：【日期時間 用餐時段】同行呈現（時段比日期大且粗體）
+      // 2. 日期時間 + 用餐時段（時段字較大、粗體）
       ctx.font = '500 ' + dateFontSize + 'px "Inter", sans-serif';
       ctx.fillStyle = dateColor;
       ctx.fillText(dateStr, pad, centerY + footerH * 0.22);
       var dateWidth = ctx.measureText(dateStr).width;
-
       if (selectedMealType) {
-        var spacing = Math.round(imgW * 0.025);
         ctx.font = '800 ' + mealFontSize + 'px "Noto Sans TC", sans-serif';
         ctx.fillStyle = mealColor;
-        ctx.fillText(selectedMealType, pad + dateWidth + spacing, centerY + footerH * 0.22);
+        ctx.fillText(selectedMealType, pad + dateWidth + Math.round(imgW * 0.025), centerY + footerH * 0.22);
       }
 
-      // 3. 右側：熱量與蛋白質
-      var rightEdge = totalW - pad;
-
+      // 3. 右側：蛋白質
       ctx.textAlign = 'right';
       ctx.font = '700 ' + unitFontSize + 'px "Noto Sans TC", "Inter", sans-serif';
       ctx.fillStyle = labelColor;
       ctx.fillText('蛋白質 PROTEIN', rightEdge, centerY - footerH * 0.16);
-
       ctx.font = '800 ' + (unitFontSize * 1.1) + 'px "Inter", sans-serif';
       ctx.fillStyle = proColor;
-      var proUnitWidth = ctx.measureText(' g').width;
       ctx.fillText(' g', rightEdge, centerY + footerH * 0.24);
-
       ctx.font = '800 ' + numFontSize + 'px "Inter", sans-serif';
       ctx.fillText(pro, rightEdge - proUnitWidth, centerY + footerH * 0.24);
-      var proBlockWidth = Math.max(
-        ctx.measureText(pro).width + proUnitWidth,
-        unitFontSize * 7.5
-      );
 
-      var dividerX = rightEdge - proBlockWidth - (imgW * 0.04);
+      // 分隔線
       ctx.strokeStyle = dividerColor;
       ctx.lineWidth = Math.max(2, Math.round(imgW * 0.0025));
       ctx.beginPath();
@@ -720,55 +852,81 @@
       ctx.lineTo(dividerX, centerY + footerH * 0.28);
       ctx.stroke();
 
-      var calRightEdge = dividerX - (imgW * 0.04);
+      // 熱量
       ctx.font = '700 ' + unitFontSize + 'px "Noto Sans TC", "Inter", sans-serif';
       ctx.fillStyle = labelColor;
       ctx.fillText('熱量 CALORIES', calRightEdge, centerY - footerH * 0.16);
-
       ctx.font = '800 ' + (unitFontSize * 1.1) + 'px "Inter", sans-serif';
       ctx.fillStyle = calColor;
-      var calUnitWidth = ctx.measureText(' kcal').width;
       ctx.fillText(' kcal', calRightEdge, centerY + footerH * 0.24);
-
       ctx.font = '800 ' + numFontSize + 'px "Inter", sans-serif';
       ctx.fillText(cal, calRightEdge - calUnitWidth, centerY + footerH * 0.24);
 
-      var finalImg = document.getElementById('finalPolaroidImg');
-      finalImg.src = canvas.toDataURL('image/jpeg', 0.95);
+      document.getElementById('finalPolaroidImg').src = canvas.toDataURL('image/jpeg', 0.95);
     }
 
-    function downloadImage() {
+    /* ================= 儲存 / 分享 ================= */
+    function fileName() {
+      var d = new Date();
+      var title = (document.getElementById('titleInput').value || '飲食紀錄').replace(/[\\/:*?"<>|]/g, '');
+      return '' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '-' + (selectedMealType ? selectedMealType + '-' : '') + title + '.jpg';
+    }
+
+    function saveImage() {
       var canvas = document.getElementById('polaroidCanvas');
+      if (!foodImageObj) { alert('請先上傳餐點照片'); return; }
+      canvas.toBlob(function (blob) {
+        if (!blob) { fallbackDownload(); return; }
+        var file;
+        try { file = new File([blob], fileName(), { type: 'image/jpeg' }); } catch (e) { file = null; }
+        // iPhone：叫出分享選單，可直接「儲存影像」
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file] }).catch(function (err) {
+            if (err && err.name !== 'AbortError') fallbackDownload();
+          });
+        } else {
+          fallbackDownload();
+        }
+      }, 'image/jpeg', 0.95);
+    }
+
+    function fallbackDownload() {
       var link = document.createElement('a');
-      var title = document.getElementById('titleInput').value || '飲食紀錄';
-      var prefix = selectedMealType ? (selectedMealType + '-') : '';
-      var now = new Date();
-      var dateTag = String(now.getFullYear()) + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
-      link.download = dateTag + '-' + prefix + title + '.jpg';
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.download = fileName();
+      link.href = document.getElementById('polaroidCanvas').toDataURL('image/jpeg', 0.95);
+      document.body.appendChild(link);
       link.click();
+      link.remove();
+      setTimeout(function () { alert('若沒有開始下載，請直接長按上方圖卡選「加入照片」。'); }, 600);
     }
 
     function copySummaryText() {
-      var title = document.getElementById('titleInput').value;
-      var cal = document.getElementById('calInput').value;
-      var pro = document.getElementById('proInput').value;
-      var carb = document.getElementById('carbInput').value;
-      var fat = document.getElementById('fatInput').value;
-      var summary = document.getElementById('summaryInput').value;
       var mealTag = selectedMealType ? (selectedMealType + '｜') : '';
       var timeTag = recordedDateTimeStr ? (' (' + recordedDateTimeStr + ')') : '';
-      var nl = String.fromCharCode(10);
+      var text = [
+        '🍽️ 【' + mealTag + document.getElementById('titleInput').value + '】' + timeTag,
+        '🔥 熱量：' + document.getElementById('calInput').value + ' kcal ｜ 💪 蛋白質：' + document.getElementById('proInput').value + ' g',
+        '🍚 碳水：' + document.getElementById('carbInput').value + ' g ｜ 🥑 脂肪：' + document.getElementById('fatInput').value + ' g',
+        '📝 總結：' + document.getElementById('summaryInput').value
+      ].join('\n');
 
-      var lines = [
-        '🍽️ 【' + mealTag + title + '】' + timeTag,
-        '🔥 熱量：' + cal + ' kcal ｜ 💪 蛋白質：' + pro + ' g',
-        '🍚 碳水：' + carb + ' g ｜ 🥑 脂肪：' + fat + ' g',
-        '📝 總結：' + summary
-      ];
-      navigator.clipboard.writeText(lines.join(nl)).then(function() {
-        alert('已複製完整營養紀錄文字！');
-      });
+      function legacyCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0, text.length);
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) {}
+        ta.remove();
+        alert(ok ? '已複製完整營養紀錄文字！' : '複製失敗，請手動選取文字複製。');
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { alert('已複製完整營養紀錄文字！'); }, legacyCopy);
+      } else {
+        legacyCopy();
+      }
     }
   </script>
 </body>
