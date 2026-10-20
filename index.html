@@ -67,7 +67,6 @@
         <h2 class="text-sm font-bold text-gray-800">🔑 設定 Gemini API Key</h2>
         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-emerald-600 font-semibold underline">免費取得 Key ↗</a>
       </div>
-      <p class="text-xs text-gray-500">金鑰僅儲存於您的手機瀏覽器中，不會上傳至任何第三方伺服器。</p>
       
       <div>
         <label class="block text-[11px] font-bold text-gray-600 mb-1">API 金鑰</label>
@@ -75,12 +74,15 @@
       </div>
 
       <div>
-        <label class="block text-[11px] font-bold text-gray-600 mb-1">優先使用的 AI 模型</label>
-        <input type="text" id="modelInput" value="gemini-flash-latest" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <div class="flex flex-wrap gap-1.5 mt-1.5">
-          <button type="button" onclick="setModelName('gemini-flash-latest')" class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-semibold">gemini-flash-latest (推薦)</button>
-          <button type="button" onclick="setModelName('gemini-3.8-flash')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-semibold">gemini-3.8-flash</button>
-          <button type="button" onclick="setModelName('gemini-2.5-flash')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-semibold">gemini-2.5-flash</button>
+        <div class="flex justify-between items-center mb-1">
+          <label class="block text-[11px] font-bold text-gray-600">AI 模型版本</label>
+          <button type="button" onclick="detectAvailableModels()" class="text-[11px] text-emerald-600 font-bold underline">🔍 自動偵測可用模型</button>
+        </div>
+        <input type="text" id="modelInput" value="gemini-3.0-flash" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <div id="modelTags" class="flex flex-wrap gap-1.5 mt-1.5">
+          <button type="button" onclick="setModelName('gemini-3.0-flash')" class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-semibold">gemini-3.0-flash (最新推薦)</button>
+          <button type="button" onclick="setModelName('gemini-2.0-flash')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-semibold">gemini-2.0-flash</button>
+          <button type="button" onclick="setModelName('gemini-1.5-flash')" class="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-semibold">gemini-1.5-flash</button>
         </div>
       </div>
 
@@ -248,7 +250,12 @@
     window.addEventListener('DOMContentLoaded', function() {
       try {
         var savedKey = localStorage.getItem('gemini_diet_api_key');
-        var savedModel = localStorage.getItem('gemini_diet_model') || 'gemini-flash-latest';
+        var savedModel = localStorage.getItem('gemini_diet_model');
+        // 自動將之前誤存的 3.8 或 2.5 修正為官方最新的 gemini-3.0-flash
+        if (!savedModel || savedModel === 'gemini-3.8-flash' || savedModel === 'gemini-2.5-flash') {
+          savedModel = 'gemini-3.0-flash';
+          localStorage.setItem('gemini_diet_model', savedModel);
+        }
         document.getElementById('modelInput').value = savedModel;
 
         if (savedKey) {
@@ -270,11 +277,12 @@
 
     function setModelName(name) {
       document.getElementById('modelInput').value = name;
+      localStorage.setItem('gemini_diet_model', name);
     }
 
     function saveApiKey() {
       var key = document.getElementById('apiKeyInput').value.trim();
-      var model = document.getElementById('modelInput').value.trim() || 'gemini-flash-latest';
+      var model = document.getElementById('modelInput').value.trim() || 'gemini-3.0-flash';
       if (!key) {
         alert('請輸入有效的 Gemini API Key');
         return;
@@ -283,6 +291,58 @@
       localStorage.setItem('gemini_diet_model', model);
       updateApiStatus(true);
       document.getElementById('apiModal').classList.add('hidden');
+    }
+
+    // 自動向 Google 伺服器查詢該 API Key 可用的最新模型
+    async function detectAvailableModels() {
+      var key = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gemini_diet_api_key');
+      if (!key) {
+        alert('請先在上方輸入 API 金鑰！');
+        return;
+      }
+      try {
+        var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key);
+        var data = await res.json();
+        if (!res.ok || !data.models) {
+          throw new Error((data.error && data.error.message) || '無法取得模型清單');
+        }
+        var flashModels = [];
+        for (var i = 0; i < data.models.length; i++) {
+          var m = data.models[i];
+          var name = m.name.replace('models/', '');
+          if (name.indexOf('gemini') !== -1 && m.supportedGenerationMethods && m.supportedGenerationMethods.indexOf('generateContent') !== -1) {
+            if (name.indexOf('flash') !== -1 || name.indexOf('3.0') !== -1) {
+              flashModels.push(name);
+            }
+          }
+        }
+        if (flashModels.length > 0) {
+          // 優先選擇 3.0-flash
+          var best = flashModels[0];
+          for (var j = 0; j < flashModels.length; j++) {
+            if (flashModels[j].indexOf('3.0-flash') !== -1) {
+              best = flashModels[j];
+              break;
+            }
+          }
+          setModelName(best);
+          var tagContainer = document.getElementById('modelTags');
+          tagContainer.innerHTML = '';
+          flashModels.slice(0, 5).forEach(function(mName) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-semibold';
+            btn.textContent = mName;
+            btn.onclick = function() { setModelName(mName); };
+            tagContainer.appendChild(btn);
+          });
+          alert('偵測成功！已自動為您切換為可用模型：' + best);
+        } else {
+          alert('未找到適合的 Flash 模型，請手動輸入 gemini-3.0-flash');
+        }
+      } catch (err) {
+        alert('偵測失敗：' + err.message);
+      }
     }
 
     function updateApiStatus(hasKey) {
@@ -406,8 +466,8 @@
     }
 
     async function callGeminiWithFallback(apiKey, payload, statusCallback) {
-      var preferredModel = localStorage.getItem('gemini_diet_model') || 'gemini-flash-latest';
-      var candidates = [preferredModel, 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash'];
+      var preferredModel = document.getElementById('modelInput').value.trim() || localStorage.getItem('gemini_diet_model') || 'gemini-3.0-flash';
+      var candidates = [preferredModel, 'gemini-3.0-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
       var uniqueModels = [];
       for (var i = 0; i < candidates.length; i++) {
         if (uniqueModels.indexOf(candidates[i]) === -1) {
@@ -415,7 +475,7 @@
         }
       }
 
-      var lastError = null;
+      var errors = [];
       for (var j = 0; j < uniqueModels.length; j++) {
         var modelName = uniqueModels[j];
         statusCallback('正在透過 ' + modelName + ' 估算中...');
@@ -433,18 +493,19 @@
             document.getElementById('modelInput').value = modelName;
             return data;
           }
-          lastError = (data.error && data.error.message) ? data.error.message : ('模型 ' + modelName + ' 無回應');
-          if (lastError.indexOf('API_KEY_INVALID') !== -1 || lastError.indexOf('API key not valid') !== -1) {
+          var errMsg = (data.error && data.error.message) ? data.error.message : ('模型 ' + modelName + ' 無回應');
+          errors.push('[' + modelName + ']: ' + errMsg);
+          if (errMsg.indexOf('API_KEY_INVALID') !== -1 || errMsg.indexOf('API key not valid') !== -1) {
             throw new Error('API Key 無效，請確認是否複製完整');
           }
         } catch (err) {
-          lastError = err.message;
-          if (lastError.indexOf('API Key 無效') !== -1) {
+          errors.push('[' + modelName + ']: ' + err.message);
+          if (err.message.indexOf('API Key 無效') !== -1) {
             throw err;
           }
         }
       }
-      throw new Error(lastError || '所有模型皆連線逾時，請檢查網路或直接手動輸入數字');
+      throw new Error(errors[0] || '所有模型皆連線失敗');
     }
 
     async function analyzeWithAI() {
@@ -478,18 +539,7 @@
       try {
         var menuHint = menuBase64 ? '、「菜單/標示照」（第二張圖）' : '';
         var noteHint = note ? note : '無特別補充';
-        var promptText = [
-          '你是一位專業精準的台灣營養師。這是一餐「' + selectedMealType + '」。請根據提供的「餐點實拍照」（第一張圖）' + menuHint + '，以及使用者的補充說明：「' + noteHint + '」，精確估算這份餐點實際攝取的營養素。',
-          '請嚴格只回傳 JSON 格式（不要包含 markdown 語法），包含以下欄位：',
-          '{',
-          '  "meal_title": "簡短有質感的餐點名稱（建議 10 字以內，顯示於拍立得底欄）",',
-          '  "calories": 整數(大卡 kcal),',
-          '  "protein": 數字(蛋白質克數 g，可至小數點第一位),',
-          '  "carbs": 數字(碳水化合物克數 g，可至小數點第一位),',
-          '  "fat": 數字(脂肪克數 g，可至小數點第一位),',
-          '  "summary": "100字以內的繁體中文餐點內容拆解與營養總結（例如各食材份量估算與營養比例點評）"',
-          '}'
-        ].join('\n');
+        var promptText = '你是一位專業精準的台灣營養師。這是一餐「' + selectedMealType + '」。請根據提供的「餐點實拍照」（第一張圖）' + menuHint + '，以及使用者的補充說明：「' + noteHint + '」，精確估算這份餐點實際攝取的營養素。請嚴格只回傳 JSON 格式（不要包含 markdown 語法），包含以下欄位：{"meal_title": "簡短有質感的餐點名稱（建議 10 字以內，顯示於拍立得底欄）", "calories": 整數(大卡 kcal), "protein": 數字(蛋白質克數 g，可至小數點第一位), "carbs": 數字(碳水化合物克數 g，可至小數點第一位), "fat": 數字(脂肪克數 g，可至小數點第一位), "summary": "100字以內的繁體中文餐點內容拆解與營養總結（例如各食材份量估算與營養比例點評）"}';
 
         var parts = [{ text: promptText }];
         parts.push({ inline_data: { mime_type: foodMimeType, data: foodBase64 } });
@@ -509,7 +559,6 @@
         });
 
         var rawText = data.candidates[0].content.parts[0].text.trim();
-        rawText = rawText.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
         var firstBrace = rawText.indexOf('{');
         var lastBrace = rawText.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
@@ -519,9 +568,9 @@
 
         document.getElementById('titleInput').value = result.meal_title || '營養餐點紀錄';
         document.getElementById('calInput').value = Math.round(result.calories || 0);
-        document.getElementById('proInput').value = Number(result.protein || 0).toFixed(1).replace(/\.0$/, '');
-        document.getElementById('carbInput').value = Number(result.carbs || 0).toFixed(1).replace(/\.0$/, '');
-        document.getElementById('fatInput').value = Number(result.fat || 0).toFixed(1).replace(/\.0$/, '');
+        document.getElementById('proInput').value = Math.round(Number(result.protein || 0) * 10) / 10;
+        document.getElementById('carbInput').value = Math.round(Number(result.carbs || 0) * 10) / 10;
+        document.getElementById('fatInput').value = Math.round(Number(result.fat || 0) * 10) / 10;
         document.getElementById('summaryInput').value = result.summary || '';
 
         document.getElementById('resultSection').classList.remove('hidden');
@@ -530,7 +579,7 @@
         document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
 
       } catch (err) {
-        alert('AI 分析提示：' + err.message + '\n\n（拍立得已為您生成於下方，您可直接手動修改數值！）');
+        alert('AI 分析提示：' + err.message);
       } finally {
         btn.disabled = false;
         btnText.textContent = '✨ AI 智能估算並更新數據';
@@ -709,6 +758,7 @@
       var summary = document.getElementById('summaryInput').value;
       var mealTag = selectedMealType ? (selectedMealType + '｜') : '';
       var timeTag = recordedDateTimeStr ? (' (' + recordedDateTimeStr + ')') : '';
+      var nl = String.fromCharCode(10);
 
       var lines = [
         '🍽️ 【' + mealTag + title + '】' + timeTag,
@@ -716,7 +766,7 @@
         '🍚 碳水：' + carb + ' g ｜ 🥑 脂肪：' + fat + ' g',
         '📝 總結：' + summary
       ];
-      navigator.clipboard.writeText(lines.join('\n')).then(function() {
+      navigator.clipboard.writeText(lines.join(nl)).then(function() {
         alert('已複製完整營養紀錄文字！');
       });
     }
